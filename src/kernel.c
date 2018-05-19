@@ -1,12 +1,14 @@
-void kmain(void){
-    const char *str = "Hello World";
+void kmain(void) {
+    const char *str = "Hello World\0";
     char *v_mem_ptr = (char )0xb8000;	// Video memory address in protected mode
 
     unsigned int i = 0;
     unsigned int j = 0;
 
 	// clear screen
-	while(j < 80 * 25 * 2) {
+	unsigned int screensize;
+	screensize = 80 * 25 * 2;
+	while(j < screensize) {
 		v_mem_ptr[j] = ' ';
 		/* attribute-byte - light grey on black screen */
 		v_mem_ptr[j+1] = 0x07; 		
@@ -20,6 +22,6 @@ void kmain(void){
 		v_mem_ptr[i+1] = 0x07;
 		++j;
 		i = i + 2;
-	}
+	} 
 	return;
 }
