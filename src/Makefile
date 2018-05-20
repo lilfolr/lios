@@ -1,16 +1,29 @@
+CC = gcc -m32 -fno-stack-protector -Wno-implicit-function-declaration
+SRCS = $(wildcard io/*.c)
+PROGS = $(patsubst %.c,%,$(SRCS))
+OBJS = $(SRCS:.c=.o)
+
+.PHONY: clean all
+
 all: kernel
 
 deploy: kernel
 	sudo cp out/kernel-001 /boot 
 
-kernel: kc.o kasm.o
-	ld -m elf_i386 -T link.ld -o out/kernel-001 out/kasm.o out/kc.o
+kernel: kc.o kasm.o $(PROGS)
+	ld -m elf_i386 -T link.ld -o out/kernel-001 out/kasm.o out/kc.o $(addprefix out/,$(OBJS))
+
+%: %.c
+	$(CC) -c -o out/$@.o $<
 
 kc.o:
-	gcc -m32 -c kernel.c -o out/kc.o
+	$(CC) -c kernel.c -o out/kc.o
 
-kasm.o:
+kasm.o: setup_dir
 	nasm -f elf32 kernel.asm -o out/kasm.o
 
+setup_dir:
+	mkdir -p out/io
+
 clean:
-	rm -f out/*
+	rm -rf out/*

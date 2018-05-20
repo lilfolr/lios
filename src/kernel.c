@@ -1,27 +1,15 @@
+#include "io/screen.h"
+#include "io/idt.h"
+#include "io/keyboard.h"
+
 void kmain(void) {
+	idt_init();
+	kb_init();
+
     const char *str = "Hello World\0";
-    char *v_mem_ptr = (char *)0xb8000;	// Video memory address in protected mode
 
-    unsigned int i = 0;
-    unsigned int j = 0;
-	unsigned int screensize;
-
-	// clear screen
-	screensize = 80 * 25 * 2;
-	while(j < screensize) {
-		v_mem_ptr[j] = ' ';
-		/* attribute-byte - light grey on black screen */
-		v_mem_ptr[j+1] = 0x07; 		
-		j = j + 2;
-	}
-
-	j = 0;
-    /* this loop writes the string to video memory */
-	while(str[j] != '\0') {
-		v_mem_ptr[i] = str[j];
-		v_mem_ptr[i+1] = 0x07;
-		++j;
-		i = i + 2;
-	} 
-	return;
+	clear_screen();
+	kprint(str);
+	
+	while(1) __asm__("hlt\n\t");
 }
