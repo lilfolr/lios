@@ -1,0 +1,1 @@
+".\qemu-system-i386.exe.lnk" -kernel "C:\Users\Leighton\Documents\share\lios\src\out\kernel-001" -S -s
