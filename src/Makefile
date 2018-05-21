@@ -1,30 +1,31 @@
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-CC = gcc -m32 -fno-stack-protector -Wno-implicit-function-declaration -I$(ROOT_DIR)
-SRCS = $(wildcard drivers/*/*.c)
+CC = gcc 
+CFLAGS = -g -m32 -fno-stack-protector -Wno-implicit-function-declaration -I$(ROOT_DIR)
+SRCS = $(wildcard kernel/*.c drivers/*.c cpu/*.c)
+HEADERS = $(wildcard kernel/*.h drivers/*.h cpu/*.h)
 PROGS = $(patsubst %.c,%,$(SRCS))
-OBJS = $(SRCS:.c=.o)
+OBJS = ${SRCS:.c=.o}
 
 .PHONY: clean all
 
 all: kernel
 
 deploy: kernel
-	sudo cp out/kernel-001 /boot 
+	sudo cp _out/kernel-001 /boot 
 
-kernel: kc.o kasm.o $(PROGS)
-	ld -m elf_i386 -T link.ld -o out/kernel-001 out/kasm.o out/kc.o $(addprefix out/,$(OBJS))
+kernel: $(OBJS) _out/kernel/kernel.o
+	ld -m elf_i386 -T link.ld -o $(addprefix _out/,$(OBJS)) _out/cpu/interrupt.o
 
-%: %.c
-	$(CC) -c -o out/$@.o $<
+%.o: %.c $(HEADERS) setup_dir
+	$(CC) $(CFLAGS) -c -o _out/$@ $<
 
-kc.o:
-	$(CC) -c kernel/kernel.c -o out/kc.o
-
-kasm.o: setup_dir
-	nasm -f elf32 kernel/kernel.asm -o out/kasm.o
+%.o: %.asm setup_dir
+	nasm $< -f elf -o _out/$@
 
 setup_dir:
-	mkdir -p out/drivers/io
+	mkdir -p _out/drivers/ && \
+	mkdir -p _out/cpu/ && \
+	mkdir -p _out/kernel/
 
 clean:
-	rm -rf out/*
+	rm -rf _out/*
