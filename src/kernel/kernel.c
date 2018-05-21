@@ -1,6 +1,6 @@
-#include "io/screen.h"
-#include "io/idt.h"
-#include "io/keyboard.h"
+#include "drivers/io/screen.h"
+#include "drivers/io/idt.h"
+#include "drivers/io/keyboard.h"
 
 void kmain(void) {
 	idt_init();
