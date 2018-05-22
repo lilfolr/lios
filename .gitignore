@@ -1,3 +1,17 @@
+# IDE
 .vscode/
+
+# Kernel Files
+*.bin
 *.o
+*.swp
+*.dis
+*.elf
+*.sym
 kernel-001
+
+# Other
+*\qemu-system*
+
+# Build
+src\_out\*

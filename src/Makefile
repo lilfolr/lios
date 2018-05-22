@@ -1,16 +1,47 @@
-all: kernel
+C_SOURCES = $(wildcard kernel/*.c drivers/*.c)
+HEADERS = $(wildcard kernel/*.h drivers/*.h)
+# Nice syntax for file extension replacement
+OBJ = ${C_SOURCES:.c=.o}
 
-deploy: kernel
-	sudo cp out/kernel-001 /boot 
+# Change this if your cross-compiler is somewhere else
+CC = gcc
+CFLAGS = -g -m32
+LD = ld
+LD_X86_FLAGS = -m elf_i386 -s --ignore-unresolved-symbol _GLOBAL_OFFSET_TABLE_
+GDB = gdb
 
-kernel: kc.o kasm.o
-	ld -m elf_i386 -T link.ld -o out/kernel-001 out/kasm.o out/kc.o
+# First rule is run by default
+os-image.bin: boot/bootsect.bin kernel.bin
+	cat $^ > os-image.bin
 
-kc.o:
-	gcc -m32 -c kernel.c -o out/kc.o
+# '--oformat binary' deletes all symbols as a collateral, so we don't need
+# to 'strip' them manually on this case
+kernel.bin: boot/kernel_entry.o ${OBJ}
+	${LD} ${LD_X86_FLAGS} -o $@ -Ttext 0x1000 $^ --oformat binary
 
-kasm.o:
-	nasm -f elf32 kernel.asm -o out/kasm.o
+# Used for debugging purposes
+kernel.elf: boot/kernel_entry.o ${OBJ}
+	${LD} -o $@ -Ttext 0x1000 $^ 
+
+run: os-image.bin
+	qemu-system-i386 -fda os-image.bin
+
+# Open the connection to qemu and load our kernel-object file with symbols
+debug: os-image.bin kernel.elf
+	qemu-system-i386 -s -fda os-image.bin &
+	${GDB} -ex "target remote localhost:1234" -ex "symbol-file kernel.elf"
+
+# Generic rules for wildcards
+# To make an object, always compile from its .c
+%.o: %.c ${HEADERS}
+	${CC} ${CFLAGS} -ffreestanding -c $< -o $@
+
+%.o: %.asm
+	nasm $< -f elf -o $@
+
+%.bin: %.asm
+	nasm $< -f bin -o $@
 
 clean:
-	rm -f out/*
+	rm -rf *.bin *.dis *.o os-image.bin *.elf
+	rm -rf kernel/*.o boot/*.bin drivers/*.o boot/*.o
